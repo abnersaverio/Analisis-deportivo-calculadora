@@ -118,7 +118,7 @@ if st.button("🚀 CORRER SIMULACIÓN AVANZADA", use_container_width=True):
     prom_c_l, prom_c_v = corners_l / pj_l, corners_v / pj_v
     total_corners = round(prom_c_l + prom_c_v, 2)
 
-    prom_t_l, prom_t_v = tarjetas_l / pj_l, tarjetas_v / pj_v
+    rm_t_l, prom_t_v = tarjetas_l / pj_l, tarjetas_v / pj_v
     total_tarjetas = round(prom_t_l + prom_t_v, 2)
 
     # Cálculo de Frecuencias de Mercado Empíricas (Over y Under)
@@ -168,6 +168,52 @@ if st.button("🚀 CORRER SIMULACIÓN AVANZADA", use_container_width=True):
     # --- DESPLIEGUE EN INTERFAZ ---
     st.header(f"📊 Reporte de Inteligencia: {nombre_l} vs {nombre_v}")
     
+    # --- BOTÓN DE EXPORTACIÓN ---
+    reporte_txt = f"""
+=========================================
+REPORTE DE INTELIGENCIA DEPORTIVA
+Partido: {nombre_l} vs {nombre_v}
+=========================================
+
+🏆 PREDICCIÓN DE DESENLACE:
+- Gana {nombre_l} (1): {prob_final_l}%
+- Empate (X): {prob_final_e}%
+- Gana {nombre_v} (2): {prob_final_v}%
+
+🛡️ MERCADOS DE SEGURIDAD:
+- Doble Oportunidad 1X: {prob_final_l + prob_final_e}%
+- Doble Oportunidad X2: {prob_final_v + prob_final_e}%
+- Ambos Marcan (SÍ): {prob_ambos_marcan}%
+- Ambos Marcan (NO): {prob_no_ambos_marcan}%
+
+🎯 HÁNDICAP SUGERIDO:
+- {handicap_sugerido} (Margen: {round(margen_goles, 2)})
+
+📈 ANÁLISIS DE GOLES (90 Min):
+- Over +1.5 Goles: {freq_over15}%
+- Under -1.5 Goles: {freq_under15}%
+- Over +2.5 Goles: {freq_over25}%
+- Under -2.5 Goles: {freq_under25}%
+
+🚩 CORNERS Y 🟨 TARJETAS:
+- Over +7.5 Corners: {freq_over75_c}%
+- Under -7.5 Corners: {freq_under75_c}%
+- Total Tarjetas Proyectadas: {total_tarjetas}
+
+🧮 TOP 3 MARCADORES EXACTOS (POISSON):
+1. [{top_3_marcadores[0][0]}] con {round(top_3_marcadores[0][1], 1)}%
+2. [{top_3_marcadores[1][0]}] con {round(top_3_marcadores[1][1], 1)}%
+3. [{top_3_marcadores[2][0]}] con {round(top_3_marcadores[2][1], 1)}%
+"""
+
+    st.download_button(
+        label="📥 EXPORTAR RESULTADOS (TXT)",
+        data=reporte_txt,
+        file_name=f"Pronostico_{nombre_l}_vs_{nombre_v}.txt",
+        mime="text/plain",
+        use_container_width=True
+    )
+    
     st.markdown("### 🏆 Predicción de Desenlace (Forma de Campo + H2H)")
     c1, c2, c3 = st.columns(3)
     c1.metric(f"Gana {nombre_l} (1)", f"{prob_final_l}%")
@@ -182,6 +228,52 @@ if st.button("🚀 CORRER SIMULACIÓN AVANZADA", use_container_width=True):
     am4.metric("Ambos Marcan: NO", f"{prob_no_ambos_marcan}%")
 
     st.info(f"🎯 **Hándicap Sugerido:** {handicap_sugerido} | Margen de Goles: {round(margen_goles, 2)}")
+    
+    # --- PARLAY AUTOMÁTICO RECOMENDADO ---
+    st.markdown("### 🎫 Parlay Sugerido (Opciones de Alta Confianza)")
+    
+    parlay_picks = []
+
+    # 1. Doble Oportunidad (Umbral de seguridad >= 75%)
+    if (prob_final_l + prob_final_e) >= 75:
+        parlay_picks.append(f"Doble Oportunidad: {nombre_l} o Empate (1X)")
+    elif (prob_final_v + prob_final_e) >= 75:
+        parlay_picks.append(f"Doble Oportunidad: {nombre_v} o Empate (X2)")
+
+    # 2. Goles Totales (Umbral de seguridad >= 80%)
+    if freq_over15 >= 80:
+        parlay_picks.append("Total de Goles: Más de 1.5")
+    elif freq_under25 >= 80:
+        parlay_picks.append("Total de Goles: Menos de 2.5")
+
+    # 3. Corners y Tarjetas (Filtrando extremos seguros)
+    if freq_over75_c >= 80:
+        parlay_picks.append("Tiros de Esquina: Más de 7.5")
+    elif freq_under75_c >= 80:
+        parlay_picks.append("Tiros de Esquina: Menos de 7.5")
+        
+    if total_tarjetas <= 4.5:
+        parlay_picks.append("Tarjetas Totales: Menos de 5.5")
+    elif total_tarjetas >= 6.5:
+        parlay_picks.append("Tarjetas Totales: Más de 4.5")
+
+    # 4. Ambos Marcan (Umbral >= 75%)
+    if prob_ambos_marcan >= 75:
+        parlay_picks.append("Ambos Equipos Anotan: SÍ")
+    elif prob_no_ambos_marcan >= 75:
+        parlay_picks.append("Ambos Equipos Anotan: NO")
+
+    # Imprimir Parlay Sugerido en la Interfaz
+    if len(parlay_picks) >= 2:
+        mejores_opciones = parlay_picks[:3]
+        texto_parlay = "\n".join([f"✅ **{pick}**" for pick in mejores_opciones])
+        st.success(f"🎯 **El Motor Recomienda combinar:**\n\n{texto_parlay}")
+        st.caption("💡 Opciones con alta probabilidad matemática. Ideal para armar tu combinación rápida.")
+    elif len(parlay_picks) == 1:
+        st.warning(f"⚠️ Partido muy ajustado estadísticamente. La única opción con alta confianza es: **{parlay_picks[0]}**")
+    else:
+        st.error("🚫 Estadísticas muy divididas. Partido de alto riesgo para combinar, se recomienda evitarlo.")
+
     st.divider()
 
     # --- TOTALES + OVER/UNDER SIMULTÁNEOS ---
