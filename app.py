@@ -118,7 +118,7 @@ if st.button("🚀 CORRER SIMULACIÓN AVANZADA", use_container_width=True):
     prom_c_l, prom_c_v = corners_l / pj_l, corners_v / pj_v
     total_corners = round(prom_c_l + prom_c_v, 2)
 
-    rm_t_l, prom_t_v = tarjetas_l / pj_l, tarjetas_v / pj_v
+    prom_t_l, prom_t_v = tarjetas_l / pj_l, tarjetas_v / pj_v
     total_tarjetas = round(prom_t_l + prom_t_v, 2)
 
     # Cálculo de Frecuencias de Mercado Empíricas (Over y Under)
